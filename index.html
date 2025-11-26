@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>爸爸，该吃药啦！</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- 引入药品数据 -->
+    <script src="./medicine-data.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 15px;
+            max-width: 600px;
+            margin: 0 auto;
+            font-size: 18px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .button-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .time-button {
+            padding: 18px 12px;
+            background-color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 2rem;
+            font-weight: 500;
+            color: #444;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .time-button:hover, .time-button.active {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .content-area {
+            background-color: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            min-height: 250px;
+            margin-bottom: 20px;
+        }
+
+        .medicine-item {
+            padding: 18px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .medicine-item:last-child {
+            border-bottom: none;
+        }
+
+        .medicine-name {
+            font-weight: 600;
+            font-size: 2rem;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .medicine-dosage {
+            color: #7f8c8d;
+            font-size: 2rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #95a5a6;
+            padding: 50px 20px;
+            font-size: 1.3rem;
+        }
+
+        .edit-mode {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .edit-controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 14px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1.1rem;
+        }
+
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+        }
+
+        .btn-edit {
+            background-color: #2ecc71;
+            color: white;
+            margin-top: 15px;
+            width: 100%;
+            padding: 16px;
+            font-size: 1.2rem;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+
+        .medicine-input-group {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .medicine-input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 1.2rem;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #7f8c8d;
+            font-size: 1rem;
+        }
+
+        .data-management {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        @media (max-width: 480px) {
+            .button-container {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>爸爸，该吃药啦！</h1>
+        <p class="subtitle">按时服药，健康生活</p>
+    </header>
+
+    <div class="button-container">
+        <button class="time-button" data-time="morning_after">早起后</button>
+        <button class="time-button" data-time="breakfast_during">早饭中</button>
+        <button class="time-button" data-time="breakfast_after">早饭后</button>
+        <button class="time-button" data-time="lunch_during">午饭中</button>
+        <button class="time-button" data-time="lunch_after">午饭后</button>
+        <button class="time-button" data-time="dinner_during">晚饭中</button>
+        <button class="time-button" data-time="dinner_after">晚饭后</button>
+        <button class="time-button" data-time="before_sleep">睡前</button>
+    </div>
+
+    <div class="content-area">
+        <div class="empty-state">
+            <p>请选择一个时间段查看用药信息</p>
+        </div>
+        <div class="medicine-list"></div>
+    </div>
+
+<!--    <button class="btn-edit" id="toggleEdit">编辑用药信息</button>
+
+    <div class="edit-mode" id="editMode">
+        <h3 style="font-size: 1.5rem; margin-bottom: 15px;">编辑用药信息</h3>
+        <p style="margin-bottom: 15px; font-size: 1.1rem;">选择时间段并输入用药信息</p>
+
+        <label for="editTimeSelect" style="font-size: 1.2rem;">选择时间段：</label>
+        <select id="editTimeSelect">
+            <option value="morning_after">早起后</option>
+            <option value="breakfast_during">早饭中</option>
+            <option value="breakfast_after">早饭后</option>
+            <option value="lunch_during">午饭中</option>
+            <option value="lunch_after">午饭后</option>
+            <option value="dinner_during">晚饭中</option>
+            <option value="dinner_after">晚饭后</option>
+            <option value="before_sleep">睡前</option>
+        </select>
+
+        <div id="medicineInputs">
+            &lt;!&ndash; 这里会动态添加药品输入框 &ndash;&gt;
+        </div>
+
+        <button class="btn-primary" id="addMedicine" style="width: 100%; margin-bottom: 15px;">添加药品</button>
+
+        <div class="edit-controls">
+            <button class="btn-secondary" id="cancelEdit">取消</button>
+            <button class="btn-primary" id="saveEdit">保存</button>
+        </div>
+    </div>-->
+
+<!--    <div class="data-management">
+        <h3 style="font-size: 1.3rem; margin-bottom: 10px;">数据管理</h3>
+        <button class="btn-primary" id="exportData" style="width: 100%; margin-bottom: 10px;">导出数据</button>
+        <div style="display: flex; gap: 10px;">
+            <input type="file" id="importFile" accept=".json" style="flex: 1;">
+            <button class="btn-secondary" id="importData">导入数据</button>
+        </div>
+    </div>-->
+
+    <footer>
+        <p>建议在医生指导下用药，本提醒仅供参考</p>
+    </footer>
+
+    <script>
+        $(document).ready(function() {
+            // 使用medicine-data.js中定义的数据
+            // 如果medicineData未定义，使用默认数据
+            if (typeof medicineData === 'undefined') {
+				var medicineData = {
+					"morning_after": [
+						{name: "甲泼尼龙片", dosage: "空腹10片 如果空腹吃胃不舒服可以选择饭后一小时吃"}
+					],
+					"breakfast_during": [
+						{name: "复方氨基酸胶囊", dosage: "2粒"},
+						{name: "阿卡波糖", dosage: "2片"}
+					],
+					"breakfast_after": [
+						{name: "利伐沙班", dosage: "1片"},
+						{name: "沙库巴曲", dosage: "1片"},
+						{name: "倍他乐克", dosage: "半片"},
+						{name: "骨化三醇软胶囊", dosage: "2片"},
+						{name: "法莫替丁片", dosage: "1片"},
+						{name: "碳酸钙", dosage: "1片"},
+						{name: "二甲双胍", dosage: "1片"},
+						{name: "达格列净", dosage: "1片"}
+					],
+					"lunch_during": [
+						{name: "复方氨基酸胶囊", dosage: "2粒"},
+						{name: "阿卡波糖", dosage: "2片"}
+					],
+					"lunch_after": [
+						{name: "法莫替丁片", dosage: "1片"},
+						{name: "二甲双胍", dosage: "1片"}
+					],
+					"dinner_during": [
+						{name: "复方氨基酸胶囊", dosage: "2粒"},
+						{name: "阿卡波糖", dosage: "2片"}
+					],
+					"dinner_after": [
+						{name: "利伐沙班", dosage: "1片"},
+						{name: "倍他乐克", dosage: "半片"},
+						{name: "依折麦布", dosage: "1片"},
+						{name: "法莫替丁片", dosage: "1片"},
+						{name: "二甲双胍", dosage: "1片"}
+					],
+					"before_sleep": [
+						{name: "阿托伐他汀钙片", dosage: "2片(10mg的)"}
+					]
+				};
+            }
+
+            // 按钮点击事件
+            $('.time-button').click(function() {
+                $('.time-button').removeClass('active');
+                $(this).addClass('active');
+
+                const timeKey = $(this).data('time');
+                showMedicineList(timeKey);
+            });
+
+            // 显示药品列表
+            function showMedicineList(timeKey) {
+                const $medicineList = $('.medicine-list');
+                const $emptyState = $('.empty-state');
+
+                if (medicineData[timeKey] && medicineData[timeKey].length > 0) {
+                    $emptyState.hide();
+                    $medicineList.empty();
+
+                    medicineData[timeKey].forEach(medicine => {
+                        $medicineList.append(`
+                            <div class="medicine-item">
+                                <div class="medicine-name">${medicine.name}</div>
+                                <div class="medicine-dosage">${medicine.dosage}</div>
+                            </div>
+                        `);
+                    });
+                } else {
+                    $emptyState.show();
+                    $medicineList.empty();
+                }
+            }
+
+            // 编辑模式切换
+            $('#toggleEdit').click(function() {
+                const $editMode = $('#editMode');
+                if ($editMode.is(':visible')) {
+                    $editMode.slideUp();
+                    $(this).text('编辑用药信息');
+                } else {
+                    $editMode.slideDown();
+                    $(this).text('取消编辑');
+                    // 加载当前选中时间段的用药信息到编辑器
+                    const activeButton = $('.time-button.active');
+                    if (activeButton.length) {
+                        const timeKey = activeButton.data('time');
+                        $('#editTimeSelect').val(timeKey);
+                        loadMedicineToEditor(timeKey);
+                    } else {
+                        // 默认加载第一个时间段
+                        $('#editTimeSelect').val('morning_after');
+                        loadMedicineToEditor('morning_after');
+                    }
+                }
+            });
+
+            // 取消编辑
+            $('#cancelEdit').click(function() {
+                $('#editMode').slideUp();
+                $('#toggleEdit').text('编辑用药信息');
+            });
+
+            // 加载药品信息到编辑器
+            function loadMedicineToEditor(timeKey) {
+                const $medicineInputs = $('#medicineInputs');
+                $medicineInputs.empty();
+
+                if (medicineData[timeKey] && medicineData[timeKey].length > 0) {
+                    medicineData[timeKey].forEach((medicine, index) => {
+                        $medicineInputs.append(`
+                            <div class="medicine-input-group" data-index="${index}">
+                                <label>药品名称 ${index + 1}</label>
+                                <input type="text" class="medicine-name-input" value="${medicine.name}" placeholder="请输入药品名称">
+                                <label>用药剂量 ${index + 1}</label>
+                                <input type="text" class="medicine-dosage-input" value="${medicine.dosage}" placeholder="请输入用药剂量">
+                                <button class="btn-secondary remove-medicine" style="width: 100%; margin-top: 5px;">删除这个药品</button>
+                            </div>
+                        `);
+                    });
+                } else {
+                    // 如果没有药品，添加一个空的输入组
+                    $medicineInputs.append(`
+                        <div class="medicine-input-group" data-index="0">
+                            <label>药品名称 1</label>
+                            <input type="text" class="medicine-name-input" placeholder="请输入药品名称">
+                            <label>用药剂量 1</label>
+                            <input type="text" class="medicine-dosage-input" placeholder="请输入用药剂量">
+                            <button class="btn-secondary remove-medicine" style="width: 100%; margin-top: 5px;">删除这个药品</button>
+                        </div>
+                    `);
+                }
+
+                // 绑定删除按钮事件
+                $('.remove-medicine').click(function() {
+                    $(this).closest('.medicine-input-group').remove();
+                    // 重新编号
+                    renumberMedicineInputs();
+                });
+            }
+
+            // 重新编号药品输入框
+            function renumberMedicineInputs() {
+                $('.medicine-input-group').each(function(index) {
+                    $(this).attr('data-index', index);
+                    $(this).find('label').first().text(`药品名称 ${index + 1}`);
+                    $(this).find('label').last().text(`用药剂量 ${index + 1}`);
+                });
+            }
+
+            // 添加药品输入框
+            $('#addMedicine').click(function() {
+                const index = $('.medicine-input-group').length;
+                $('#medicineInputs').append(`
+                    <div class="medicine-input-group" data-index="${index}">
+                        <label>药品名称 ${index + 1}</label>
+                        <input type="text" class="medicine-name-input" placeholder="请输入药品名称">
+                        <label>用药剂量 ${index + 1}</label>
+                        <input type="text" class="medicine-dosage-input" placeholder="请输入用药剂量">
+                        <button class="btn-secondary remove-medicine" style="width: 100%; margin-top: 5px;">删除这个药品</button>
+                    </div>
+                `);
+
+                // 绑定新删除按钮事件
+                $('.remove-medicine').last().click(function() {
+                    $(this).closest('.medicine-input-group').remove();
+                    renumberMedicineInputs();
+                });
+            });
+
+            // 保存编辑
+            $('#saveEdit').click(function() {
+                const timeKey = $('#editTimeSelect').val();
+                const medicineInputs = $('.medicine-input-group');
+
+                medicineData[timeKey] = [];
+
+                medicineInputs.each(function() {
+                    const name = $(this).find('.medicine-name-input').val().trim();
+                    const dosage = $(this).find('.medicine-dosage-input').val().trim();
+
+                    if (name && dosage) {
+                        medicineData[timeKey].push({
+                            name: name,
+                            dosage: dosage
+                        });
+                    }
+                });
+
+                // 更新显示
+                const activeButton = $('.time-button.active');
+                if (activeButton.length && activeButton.data('time') === timeKey) {
+                    showMedicineList(timeKey);
+                }
+
+                // 关闭编辑模式
+                $('#editMode').slideUp();
+                $('#toggleEdit').text('编辑用药信息');
+
+                alert('保存成功！');
+            });
+
+            // 编辑时间段选择变化时
+            $('#editTimeSelect').change(function() {
+                const timeKey = $(this).val();
+                loadMedicineToEditor(timeKey);
+            });
+
+            // 导出数据
+            $('#exportData').click(function() {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(medicineData, null, 2));
+                const downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.setAttribute("href", dataStr);
+                downloadAnchorNode.setAttribute("download", "medicine-data.json");
+                document.body.appendChild(downloadAnchorNode);
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
+            });
+
+            // 导入数据
+            $('#importData').click(function() {
+                const fileInput = $('#importFile')[0];
+                if (fileInput.files.length === 0) {
+                    alert('请选择要导入的JSON文件');
+                    return;
+                }
+
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+
+                reader.onload = function(e) {
+                    try {
+                        const importedData = JSON.parse(e.target.result);
+                        medicineData = importedData;
+                        alert('数据导入成功！');
+
+                        // 刷新当前显示
+                        const activeButton = $('.time-button.active');
+                        if (activeButton.length) {
+                            const timeKey = activeButton.data('time');
+                            showMedicineList(timeKey);
+                        }
+                    } catch (error) {
+                        alert('导入失败：文件格式不正确');
+                        console.error(error);
+                    }
+                };
+
+                reader.readAsText(file);
+            });
+
+            // 初始化显示第一个按钮的内容
+            $('.time-button:first').click();
+        });
+    </script>
+</body>
+</html>
